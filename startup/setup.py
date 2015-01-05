@@ -16,7 +16,7 @@ THIS SHOULD NOT REQUIRE ANY OF THE RED9.core modules
 
 
 __author__ = 'Mark Jackson'
-__buildVersionID__ = 1.44
+__buildVersionID__ = 1.5
 installedVersion= False
 
 import sys
@@ -53,7 +53,7 @@ log.setLevel(logging.INFO)
   2013 EXT2     .  2013  .  201355  .  2.6.4    4.7.1  .  2013.5  . 2013-01-22  . 2013 binary incompatible
 
   2014          .  2014  .  201400  .  2.6.4    4.8.2  .  2014    . 2013-04-10
-
+  2015          .  2015  .  201500  .  2.7      4.8.5  .  2015    . 2014-04-15
 ------------------------------------------------------------------------------------
 '''
 
@@ -188,6 +188,10 @@ def menuSetup(parent='MayaWindow'):
                       p='redNineMenuItemRoot', echoCommand=True,
                       c="import Red9.core.AnimationBinder as animBnd;animBnd.AnimBinderUI()._UI()")
         cmds.menuItem(divider=True,p='redNineMenuItemRoot')
+        
+        cmds.menuItem('redNineBlogItem',l="Red9_HomePage",ann="Open Red9Consultancy HomePage",
+                      p='redNineMenuItemRoot', echoCommand=True,
+                      c="Red9.setup.red9_website_home()")
         cmds.menuItem('redNineBlogItem',l="Red9_Blog",ann="Open Red9Blog",
                       p='redNineMenuItemRoot', echoCommand=True,
                       c="Red9.setup.red9_blog()")
@@ -207,6 +211,9 @@ def menuSetup(parent='MayaWindow'):
         cmds.menuItem('redNineLostAnimItem',l="Reconnect Lost Anim", p='redNineDebuggerItem',
                       ann="Reconnect lost animation data via a chSet - see my blog post for more details",
                       echoCommand=True, c="import Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.ReconnectAnimData().show()")
+        cmds.menuItem('redNineOpenCrashItem',l="Open last CrashFile", p='redNineDebuggerItem',
+                      ann="Open the last Maya crash file from your temp dir",
+                      echoCommand=True, c="import Red9.core.Red9_General as r9General;r9General.os_openCrashFile()")
         cmds.menuItem(divider=True,p='redNineDebuggerItem')
         cmds.menuItem('redNineDebugItem',l="systems: DEBUG",ann="Turn all the logging to Debug",
                       echoCommand=True, c="Red9.core._setlogginglevel_debug()")
@@ -353,7 +360,14 @@ def red9_blog(*args):
     '''
     import Red9.core.Red9_General as r9General  # lazy load
     r9General.os_OpenFile('http://red9-consultancy.blogspot.com/')
-
+    
+def red9_website_home(*args):
+    '''
+    open up the Red9 Consultancy homepage
+    '''
+    import Red9.core.Red9_General as r9General  # lazy load
+    r9General.os_OpenFile('http://red9consultancy.com/')
+    
 def red9_facebook(*args):
     '''
     open up the Red9 Facebook Page
@@ -440,7 +454,17 @@ def addPythonPackages():
         sys.path.append(red9Packages)
     else:
         log.info('Red9Packages Path already setup : %s' % red9Packages)
-
+    
+    # PySide Management for pre 2014 x64 builds
+    if mayaVersion()<2014.0 and os.path.exists(os.path.join(red9Packages, 'PySide')):
+        pysidePath=os.path.join(red9Packages, 'PySide')
+        if mayaVersion()==2012.0:
+            pysidePath=os.path.join(pysidePath, 'PySide_2012_x64')
+        elif mayaVersion()==2013.0:
+            pysidePath=os.path.join(pysidePath, 'PySide_2013_x64')
+        if os.path.exists(pysidePath) and not pysidePath in sys.path:
+            sys.path.append(pysidePath)
+            log.info('Adding Red9Packages:PySide To Python Paths : %s' % pysidePath)
      
 def sourceMelFolderContents(path):
     '''
@@ -451,7 +475,20 @@ def sourceMelFolderContents(path):
         mel.eval('source %s' % script)
 
 
-
+def has_pro_pack():
+    '''
+    Red9 Pro_Pack is available
+    '''
+    if os.path.exists(os.path.join(red9ModulePath(),'pro_pack')):
+        return True
+    
+def has_internal_systems():
+    '''
+    Red9 Consultancy internal modules only
+    '''
+    if os.path.exists(os.path.join(os.path.dirname(os.path.dirname(red9ModulePath())),'Red9_Internals')):
+        return True
+       
 #=========================================================================================
 # BOOT CALL ------------------------------------------------------------------------------
 #=========================================================================================
@@ -489,7 +526,8 @@ def start(Menu=True, MayaUIHooks=True, MayaOverloads=True, parentMenu='MayaWindo
     addScriptsPath(os.path.join(red9ModulePath(),'core'))
     
     #Add the Packages folder
-    #AddPythonPackages()
+    addPythonPackages()
+    
     if not cmds.about(batch=True):
         if Menu:
             try:
@@ -511,13 +549,13 @@ def start(Menu=True, MayaUIHooks=True, MayaOverloads=True, parentMenu='MayaWindo
         
             #Add custom items to standard built Maya menus
             addToMayaMenus()
-        
-    #mel.eval('global float $buildInstalled=%f' % red9_getVersion())
-    
+
     log.info('Red9 StudioPack Complete!')
     
-    if os.path.exists(os.path.join(red9ModulePath(),'pro_pack')):
-        cmds.evalDeferred("import Red9.pro_pack",lp=True)  # Unresolved Import
+    if has_pro_pack():
+        cmds.evalDeferred("import Red9.pro_pack", lp=True)  # Unresolved Import
+    if has_internal_systems():
+        cmds.evalDeferred("import Red9_Internals", lp=True)  # Unresolved Import
 
     
     
