@@ -233,13 +233,20 @@ def registerMClassNodeCache(mNode):
     :param mNode: instantiated mNode to add
     '''
     global RED9_META_NODECACHE
-    try:
-        #if mNode.hasAttr('UUID'):
-        UUID=mNode.setUUID()
-        if RED9_META_NODECACHE or not UUID in RED9_META_NODECACHE.keys():
-            log.debug('CACHE : Adding to MetaNode UUID Cache : %s > %s' % (mNode.mNode, UUID))
-            RED9_META_NODECACHE[UUID]=mNode
-    except:
+    #UUID=None
+    if mNode.hasAttr('UUID'):
+        try:
+            if r9Setup.mayaVersion()<=2015:
+                UUID=mNode.setUUID()
+            else:
+                UUID=mNode.UUID
+            if RED9_META_NODECACHE or not UUID in RED9_META_NODECACHE.keys():
+                log.debug('CACHE : Adding to MetaNode UUID Cache : %s > %s' % (mNode.mNode, UUID))
+                RED9_META_NODECACHE[UUID]=mNode
+        except:
+            log.debug('CACHE : Failed to set UUID for mNode : %s' % mNode.mNode)
+    else:
+        log.debug('CACHE : UUID attr not bound to this node, must be an older system')
         if RED9_META_NODECACHE or not mNode.mNode in RED9_META_NODECACHE.keys():
             log.debug('CACHE : Adding to MetaNode Cache : %s' % mNode.mNode)
             RED9_META_NODECACHE[mNode.mNode]=mNode
@@ -304,11 +311,11 @@ def printMetaCacheRegistry():
     cleanCache()
     for k,v in RED9_META_NODECACHE.items():
         print k,v
-    
+ 
 def cleanCache():
     '''
-    Run through the current cache of metaNodes and confirm that their all
-    still valid by testing the MObjectHandles
+    Run through the current cache of metaNodes and confirm that they're 
+    all still valid by testing the MObjectHandles.
     '''
     for k, v in RED9_META_NODECACHE.items():
         try:
@@ -532,16 +539,17 @@ def getConnectedMetaNodes(nodes, source=True, destination=True, mTypes=[], mInst
     From a given set of Maya Nodes return all connected mNodes
     Default return is mClass objects
     
-    :param nodes: nodes to inspect for connected meta data
+    :param nodes: nodes to inspect for connected meta data, note these are cmds MAYA nodes
     :param source: `bool` clamp the search to the source side of the graph
     :param destination: `bool` clamp the search to the destination side of the graph
     :param mTypes: return only given MetaClass's
-    :param mInstances: idea - this will check subclass inheritance, ie, MetaRig would
+    :param mInstances: this will check subclass inheritance, ie, 'MetaRig' would
             return ALL nodes who's class is inherited from MetaRig. Allows you to
             group the data more efficiently by base classes and their inheritance
     :param mAttrs: uses the FilterNode.lsSearchAttributes call to match nodes via given attrs
     :param dataType: default='mClass' return the nodes already instantiated to
                     the correct class object. If not then return the Maya node
+    :param nTypes: only return nodes of a given type, note this type must be registered to meta!
     '''
     mNodes=[]
     connections=[]
@@ -1704,12 +1712,32 @@ class MetaClass(object):
         cmds.select(self.mNode, *args, **kws)
         
     @nodeLockManager
-    def rename(self, name):
+    def rename(self, name, renameChildLinks=False):
         '''
         rename the mNode itself, again because we get the mNode via the MObject renaming is handled correctly
+        
+        :param name: new name for the mNode
+        :param renameChildLinks: set to False by default, this will rename connections back to the mNode 
+            from children who are connected directly to it, via an attr that matches the current mNode name. 
+            These connected Attrs will be renamed to reflect the change in node name
         '''
+        currentName=self.shortName()
         cmds.rename(self.mNode, name)
-        #self.mNode=name
+        # UNDER TEST
+        if renameChildLinks:
+            plugs=cmds.listConnections(self.mNode,s=True,d=True,p=True)
+            for plug in plugs:
+                split=plug.split('.')
+                attr=split[-1].split('[')[0]
+                child=split[0]
+                #print 'attr : ', attr, ' child : ', child, ' plug : ', plug, ' curName : ', currentName
+                if attr==currentName:
+                    try:
+                        child=MetaClass(child)
+                        child.renameAttr(attr, name)
+                        log.debug('Renamed Child attr to match new mNode name : %s.%s' % (child.mNode, attr))
+                    except:
+                        log.debug('Failed to rename attr : %s on node : %s' % (attr, child.mNode))
               
     def delete(self):
         '''
@@ -1738,9 +1766,9 @@ class MetaClass(object):
         change the current mClass type of the node and re-initialize the object
         '''
         if newMClass in RED9_META_REGISTERY:
-            #cmds.setAttr('%s.%s' % (self.mNode,'mClass'),e=True,l=False)
-            self.mClass=newMClass
-            #cmds.setAttr('%s.%s' % (self.mNode,'mClass'),e=True,l=True)
+            self.mClass=newMClass 
+            #we reset the cache so that the UUID's are all updated to account for the change in mClass
+            resetCache()
             return MetaClass(self.mNode, **kws)
         else:
             raise StandardError('given class is not in the mClass Registry : %s' % newMClass)
@@ -2091,6 +2119,7 @@ class MetaClass(object):
         :TODO: allow this to walk over nodes, at the moment if the direct child isn't of the correct 
             type (if using the mTypes flag) then the walk will stop. This should continue over non matching 
             nodes down the hierarchy so all children are tested.
+            !!!!!!!!!!!!!! THIS NEEDS FIXING ASAP !!!!!!!!!!!!!! or at least a flag to 'skip_over_unmatched'
         '''
 
         if not walk:
@@ -2432,7 +2461,7 @@ class MetaRig(MetaClass):
         if self.hasAttr('FacialCore'):
             if isMetaNode(self.FacialCore):
                 return self.FacialCore
-    
+
 #    def getParentSwitchData(self):
 #        '''
 #        Simple func for over-loading. This returns a list of tuples [(node,attr)] for all
@@ -3294,19 +3323,19 @@ class MetaTimeCodeHUD(MetaHUDNode):
     allows us to show the actual internal timecode attrs as their 
     original SMPTE time's
     
-    Crucial things to be aware of:
+    Crucial things to be aware of: 
     
-    We construct timecode from 3 attrs on the given node:
-    timecode_ref        : the original timecode converted to milliseconds
-    timecode_count      : a linear curve that increments every frame based on the samplerate
-    timecode_samplerate : samplerate that the linear counter was generated against
+    We construct timecode from 3 attrs on the given node: 
+    timecode_ref        : the original timecode converted to milliseconds 
+    timecode_count      : a linear curve that increments every frame based on the samplerate 
+    timecode_samplerate : samplerate that the linear counter was generated against 
     
-    SMPTE timecode is then reconstructed like so:
-    r9Audio.milliseconds_to_Timecode(ref + ((count / samplerate) * 1000))
-    
-    tcHUD=cFacialMeta.MetaTimeCodeHUD()
-    tcHUD.addMonitoredTimecodeNode(cmds.ls(sl=True)[0])
-    tcHUD.drawHUD()
+    SMPTE timecode is then reconstructed like so: 
+    >>> r9Audio.milliseconds_to_Timecode(ref + ((count / samplerate) * 1000)) 
+    >>> 
+    >>> tcHUD=cFacialMeta.MetaTimeCodeHUD() 
+    >>> tcHUD.addMonitoredTimecodeNode(cmds.ls(sl=True)[0]) 
+    >>> tcHUD.drawHUD() 
     '''
     def __init__(self, *args, **kws):
         super(MetaTimeCodeHUD, self).__init__(*args, **kws)
