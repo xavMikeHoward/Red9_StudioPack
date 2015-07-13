@@ -6,13 +6,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Red9_PoseSaver &mdash; Red9 v1.42 documentation</title>
+    <title>Red9_PoseSaver &mdash; Red9 v2.0 documentation</title>
     <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '1.42',
+        VERSION:     '2.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -21,7 +21,7 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="Red9 v1.42 documentation" href="../index.html" />
+    <link rel="top" title="Red9 v2.0 documentation" href="../index.html" />
     <link rel="next" title="Red9_Tools" href="Red9_Tools.html" />
     <link rel="prev" title="Red9_Meta" href="Red9_Meta.html" /> 
   </head>
@@ -41,7 +41,7 @@
         <li class="right" >
           <a href="Red9_Meta.html" title="Red9_Meta"
              accesskey="P">previous</a> |</li>
-        <li><a href="../index.html">Red9 v1.42 documentation</a> &raquo;</li> 
+        <li><a href="../index.html">Red9 v2.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -73,10 +73,13 @@ ALL NODES must have unique names or you may get unexpected  results!</p>
 <col width="90%" />
 </colgroup>
 <tbody valign="top">
-<tr><td><a class="reference internal" href="#Red9.core.Red9_PoseSaver.PoseData" title="Red9.core.Red9_PoseSaver.PoseData"><tt class="xref py py-obj docutils literal"><span class="pre">PoseData</span></tt></a>([filterSettings])</td>
+<tr><td><a class="reference internal" href="#Red9.core.Red9_PoseSaver.DataMap" title="Red9.core.Red9_PoseSaver.DataMap"><tt class="xref py py-obj docutils literal"><span class="pre">DataMap</span></tt></a>(*args,&nbsp;**kws[,&nbsp;filterSettings])</td>
+<td>New base class for handling data</td>
+</tr>
+<tr><td><a class="reference internal" href="#Red9.core.Red9_PoseSaver.PoseData" title="Red9.core.Red9_PoseSaver.PoseData"><tt class="xref py py-obj docutils literal"><span class="pre">PoseData</span></tt></a>(*args,&nbsp;**kws[,&nbsp;filterSettings])</td>
 <td>The PoseData is stored per node inside an internal dict as follows:</td>
 </tr>
-<tr><td><a class="reference internal" href="#Red9.core.Red9_PoseSaver.PosePointCloud" title="Red9.core.Red9_PoseSaver.PosePointCloud"><tt class="xref py py-obj docutils literal"><span class="pre">PosePointCloud</span></tt></a>(nodes[,&nbsp;filterSettings,&nbsp;mesh])</td>
+<tr><td><a class="reference internal" href="#Red9.core.Red9_PoseSaver.PosePointCloud" title="Red9.core.Red9_PoseSaver.PosePointCloud"><tt class="xref py py-obj docutils literal"><span class="pre">PosePointCloud</span></tt></a>(nodes,&nbsp;*args,&nbsp;**kws[,&nbsp;...])</td>
 <td>PosePointCloud is the technique inside the PoseSaver used to snap the pose into</td>
 </tr>
 <tr><td><a class="reference internal" href="#Red9.core.Red9_PoseSaver.PoseCompare" title="Red9.core.Red9_PoseSaver.PoseCompare"><tt class="xref py py-obj docutils literal"><span class="pre">PoseCompare</span></tt></a>(currentPose,&nbsp;referencePose[,&nbsp;...])</td>
@@ -93,15 +96,136 @@ over-loading the standard behaviour of the poseSaver, see Vimeo for
 a more detailed explanation.</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="Red9.core.Red9_PoseSaver.addPoseReference">
-<tt class="descname">addPoseReference</tt><big>(</big><em>frame</em>, <em>posefile</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.addPoseReference" title="Permalink to this definition">¶</a></dt>
+<dl class="class">
+<dt id="Red9.core.Red9_PoseSaver.DataMap">
+<em class="property">class </em><tt class="descname">DataMap</tt><big>(</big><em>filterSettings=None</em>, <em>*args</em>, <em>**kws</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.DataMap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>New base class for handling data</p>
+<p>The idea of the DataMap is to make the node handling part of any system generic.
+This allows us to use this baseClass to build up things like poseSavers and all
+we have to worry about is the data extraction part, all the node handling
+and file handling is already done by this class ;)</p>
+<p>Note that we&#8217;re not passing any data in terms of nodes here, We&#8217;ll deal with
+those in the Save and Load calls.</p>
+<dl class="attribute">
+<dt id="Red9.core.Red9_PoseSaver.DataMap.metaPose">
+<tt class="descname">metaPose</tt><a class="headerlink" href="#Red9.core.Red9_PoseSaver.DataMap.metaPose" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Red9.core.Red9_PoseSaver.DataMap.filepath">
+<tt class="descname">filepath</tt><a class="headerlink" href="#Red9.core.Red9_PoseSaver.DataMap.filepath" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Red9.core.Red9_PoseSaver.DataMap.setMetaRig">
+<tt class="descname">setMetaRig</tt><big>(</big><em>node</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.DataMap.setMetaRig" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Red9.core.Red9_PoseSaver.DataMap.hasFolderOverload">
+<tt class="descname">hasFolderOverload</tt><big>(</big><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.DataMap.hasFolderOverload" title="Permalink to this definition">¶</a></dt>
+<dd><p>modified so you can now prefix the poseHandler.py file
+makes it easier to keep track of in a production environment</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Red9.core.Red9_PoseSaver.DataMap.getNodesFromFolderConfig">
+<tt class="descname">getNodesFromFolderConfig</tt><big>(</big><em>rootNode</em>, <em>mode</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.DataMap.getNodesFromFolderConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>if the poseFolder has a poseHandler.py file use that to
+return the nodes to use for the pose instead</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Red9.core.Red9_PoseSaver.DataMap.getNodes">
+<tt class="descname">getNodes</tt><big>(</big><em>nodes</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.DataMap.getNodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the nodes to process
+This is designed to allow for specific hooks to be used from user
+code stored in the pose folder itself.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Red9.core.Red9_PoseSaver.DataMap.getSkippedAttrs">
+<tt class="descname">getSkippedAttrs</tt><big>(</big><em>rootNode=None</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.DataMap.getSkippedAttrs" title="Permalink to this definition">¶</a></dt>
+<dd><p>the returned list of attrs from this function will be
+COMPLETELY ignored by the pose system. They will not be saved
+or loaded. Currently only supported under MetaRig</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Red9.core.Red9_PoseSaver.DataMap.getMaintainedAttrs">
+<tt class="descname">getMaintainedAttrs</tt><big>(</big><em>nodesToLoad</em>, <em>parentSpaceAttrs</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.DataMap.getMaintainedAttrs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Attrs returned here will be cached prior to pose load, then restored in-tact afterwards</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Red9.core.Red9_PoseSaver.DataMap.buildDataMap">
+<tt class="descname">buildDataMap</tt><big>(</big><em>nodes</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.DataMap.buildDataMap" title="Permalink to this definition">¶</a></dt>
+<dd><p>build the internal dataMap dict, useful as a separate func so it
+can be used in the PoseCompare class easily. This is the main internal call
+for managing the actual pose data for save</p>
+<dl class="docutils">
+<dt>..note:</dt>
+<dd>this replaces the original pose call self.buildInternalPoseData()</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="Red9.core.Red9_PoseSaver.DataMap.matchInternalPoseObjects">
+<tt class="descname">matchInternalPoseObjects</tt><big>(</big><em>nodes=None</em>, <em>fromFilter=True</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.DataMap.matchInternalPoseObjects" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a throw-away and only used in the UI to select for debugging!
+from a given poseFile return or select the internal stored objects</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Red9.core.Red9_PoseSaver.DataMap.saveData">
+<tt class="descname">saveData</tt><big>(</big><em>*args</em>, <em>**kws</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.DataMap.saveData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Entry point for the generic PoseSave.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>nodes</strong> &#8211; nodes to store the data against OR the rootNode if the 
+filter is active.</li>
+<li><strong>filepath</strong> &#8211; posefile to save - if not given the pose is cached on this 
+class instance.</li>
+<li><strong>useFilter</strong> &#8211; use the filterSettings or not.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="Red9.core.Red9_PoseSaver.DataMap.loadData">
+<tt class="descname">loadData</tt><big>(</big><em>*args</em>, <em>**kws</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.DataMap.loadData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Entry point for the generic DataLoad.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>nodes</strong> &#8211; if given load the data to only these. If given and filter=True 
+this is the rootNode for the filter.</li>
+<li><strong>filepath</strong> &#8211; posefile to load - if not given the pose is loaded from a 
+cached instance on this class.</li>
+<li><strong>useFilter</strong> &#8211; If the pose has an active Filter_Settings block and this 
+is True then use the filter on the destination hierarchy.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
 
 <dl class="class">
 <dt id="Red9.core.Red9_PoseSaver.PoseData">
-<em class="property">class </em><tt class="descname">PoseData</tt><big>(</big><em>filterSettings=None</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PoseData" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<em class="property">class </em><tt class="descname">PoseData</tt><big>(</big><em>filterSettings=None</em>, <em>*args</em>, <em>**kws</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PoseData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Red9.core.Red9_PoseSaver.DataMap" title="Red9.core.Red9_PoseSaver.DataMap"><tt class="xref py py-class docutils literal"><span class="pre">Red9.core.Red9_PoseSaver.DataMap</span></tt></a></p>
 <p>The PoseData is stored per node inside an internal dict as follows:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">node</span> <span class="o">=</span> <span class="s">&#39;|group|Rig|Body|TestCtr&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">poseDict</span><span class="p">[</span><span class="s">&#39;TestCtr&#39;</span><span class="p">]</span> 
@@ -143,66 +267,6 @@ in your own MetaRig subclasses.</p>
 <p>I&#8217;m not passing any data in terms of nodes here, We&#8217;ll deal with
 those in the PoseSave and PoseLoad calls. Leaves this open for
 expansion</p>
-<dl class="attribute">
-<dt id="Red9.core.Red9_PoseSaver.PoseData.metaPose">
-<tt class="descname">metaPose</tt><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PoseData.metaPose" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="Red9.core.Red9_PoseSaver.PoseData.setMetaRig">
-<tt class="descname">setMetaRig</tt><big>(</big><em>node</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PoseData.setMetaRig" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="Red9.core.Red9_PoseSaver.PoseData.hasFolderOverload">
-<tt class="descname">hasFolderOverload</tt><big>(</big><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PoseData.hasFolderOverload" title="Permalink to this definition">¶</a></dt>
-<dd><p>modified so you can now prefix the poseHandler.py file
-makes it easier to keep track of in a production environment</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="Red9.core.Red9_PoseSaver.PoseData.getNodesFromFolderConfig">
-<tt class="descname">getNodesFromFolderConfig</tt><big>(</big><em>rootNode</em>, <em>mode</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PoseData.getNodesFromFolderConfig" title="Permalink to this definition">¶</a></dt>
-<dd><p>if the poseFolder has a poseHandler.py file use that to
-return the nodes to use for the pose instead</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="Red9.core.Red9_PoseSaver.PoseData.getNodes">
-<tt class="descname">getNodes</tt><big>(</big><em>nodes</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PoseData.getNodes" title="Permalink to this definition">¶</a></dt>
-<dd><p>get the nodes to process
-This is designed to allow for specific hooks to be used from user
-code stored in the pose folder itself.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="Red9.core.Red9_PoseSaver.PoseData.buildInternalPoseData">
-<tt class="descname">buildInternalPoseData</tt><big>(</big><em>nodes</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PoseData.buildInternalPoseData" title="Permalink to this definition">¶</a></dt>
-<dd><p>build the internal pose dict&#8217;s, useful as a separate func so it
-can be used in the PoseCompare class easily. This is the main internal call
-for managing the actual pose data for save</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="Red9.core.Red9_PoseSaver.PoseData.matchInternalPoseObjects">
-<tt class="descname">matchInternalPoseObjects</tt><big>(</big><em>nodes=None</em>, <em>fromFilter=True</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PoseData.matchInternalPoseObjects" title="Permalink to this definition">¶</a></dt>
-<dd><p>This is a throw-away and only used in the UI to select for debugging!
-from a given poseFile return or select the internal stored objects</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="Red9.core.Red9_PoseSaver.PoseData.getMaintainedAttrs">
-<tt class="descname">getMaintainedAttrs</tt><big>(</big><em>nodesToLoad</em>, <em>parentSpaceAttrs</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PoseData.getMaintainedAttrs" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="Red9.core.Red9_PoseSaver.PoseData.getSkippedAttrs">
-<tt class="descname">getSkippedAttrs</tt><big>(</big><em>rootNode=None</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PoseData.getSkippedAttrs" title="Permalink to this definition">¶</a></dt>
-<dd><p>the returned list of attrs from this function will be
-COMPLETELY ignored by the pose system. They will not be saved
-or loaded. Currently only supported under MetaRig</p>
-</dd></dl>
-
 <dl class="method">
 <dt id="Red9.core.Red9_PoseSaver.PoseData.poseSave">
 <tt class="descname">poseSave</tt><big>(</big><em>*args</em>, <em>**kws</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PoseData.poseSave" title="Permalink to this definition">¶</a></dt>
@@ -217,6 +281,7 @@ filter is active.</li>
 <li><strong>filepath</strong> &#8211; posefile to save - if not given the pose is cached on this 
 class instance.</li>
 <li><strong>useFilter</strong> &#8211; use the filterSettings or not.</li>
+<li><strong>storeThumbnail</strong> &#8211; generate and store a thu8mbnail from the screen to go alongside the pose</li>
 </ul>
 </td>
 </tr>
@@ -257,7 +322,7 @@ This only checks those nodes in the snapList and only runs under relative mode.<
 
 <dl class="class">
 <dt id="Red9.core.Red9_PoseSaver.PosePointCloud">
-<em class="property">class </em><tt class="descname">PosePointCloud</tt><big>(</big><em>nodes</em>, <em>filterSettings=None</em>, <em>mesh=None</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PosePointCloud" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descname">PosePointCloud</tt><big>(</big><em>nodes</em>, <em>filterSettings=None</em>, <em>meshes=</em><span class="optional">[</span><span class="optional">]</span>, <em>time=()</em>, <em>*args</em>, <em>**kws</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PosePointCloud" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
 <p>PosePointCloud is the technique inside the PoseSaver used to snap the pose into
 relative space. It&#8217;s been added as a tool in it&#8217;s own right as it&#8217;s sometimes
@@ -271,7 +336,7 @@ useful to be able to shift poses in global space.</p>
 <li><strong>nodes</strong> &#8211; feed the nodes to process in as a list, if a filter is given
 then these are the rootNodes for it</li>
 <li><strong>filterSettings</strong> &#8211; pass in a filterSettings object to filter the given hierarchy</li>
-<li><strong>mesh</strong> &#8211; this is really for reference, rather than make a locator, pass in a reference geo
+<li><strong>meshes</strong> &#8211; this is really for reference, rather than make a locator, pass in a reference geo
 which is then shapeSwapped for the PPC root node giving great reference!</li>
 </ul>
 </td>
@@ -280,7 +345,7 @@ which is then shapeSwapped for the PPC root node giving great reference!</li>
 </table>
 <dl class="method">
 <dt id="Red9.core.Red9_PoseSaver.PosePointCloud.buildOffsetCloud">
-<tt class="descname">buildOffsetCloud</tt><big>(</big><em>rootReference=None</em>, <em>raw=False</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PosePointCloud.buildOffsetCloud" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">buildOffsetCloud</tt><big>(</big><em>rootReference=None</em>, <em>raw=False</em>, <em>projectedRots=False</em>, <em>projectedTrans=False</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PosePointCloud.buildOffsetCloud" title="Permalink to this definition">¶</a></dt>
 <dd><p>Build a point cloud up for each node in nodes
 :param nodes: list of objects to be in the cloud
 :param rootReference: the node used for the initial pivot location
@@ -288,8 +353,33 @@ which is then shapeSwapped for the PPC root node giving great reference!</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="Red9.core.Red9_PoseSaver.PosePointCloud.shapeSwapMesh">
-<tt class="descname">shapeSwapMesh</tt><big>(</big><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PosePointCloud.shapeSwapMesh" title="Permalink to this definition">¶</a></dt>
+<dt id="Red9.core.Red9_PoseSaver.PosePointCloud.getPPCNodes">
+<tt class="descname">getPPCNodes</tt><big>(</big><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PosePointCloud.getPPCNodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a list of the PPC nodes</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Red9.core.Red9_PoseSaver.PosePointCloud.getTargetNodes">
+<tt class="descname">getTargetNodes</tt><big>(</big><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PosePointCloud.getTargetNodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a list of the target controllers</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="Red9.core.Red9_PoseSaver.PosePointCloud.getCurrentInstances">
+<em class="property">static </em><tt class="descname">getCurrentInstances</tt><big>(</big><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PosePointCloud.getCurrentInstances" title="Permalink to this definition">¶</a></dt>
+<dd><p>get any current PPC nodes in the scene</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Red9.core.Red9_PoseSaver.PosePointCloud.generateVisualReference">
+<tt class="descname">generateVisualReference</tt><big>(</big><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PosePointCloud.generateVisualReference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic call that&#8217;s used to overload the visual handling 
+of the PPC is other instances such as the AnimationPPC</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Red9.core.Red9_PoseSaver.PosePointCloud.shapeSwapMeshes">
+<tt class="descname">shapeSwapMeshes</tt><big>(</big><em>selectable=True</em><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PosePointCloud.shapeSwapMeshes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Swap the mesh Geo so it&#8217;s a shape under the PPC transform root
 TODO: Make sure that the duplicate message link bug is covered!!</p>
 </dd></dl>
@@ -308,6 +398,12 @@ TODO: Make sure that the duplicate message link bug is covered!!</p>
 <dt id="Red9.core.Red9_PoseSaver.PosePointCloud.delete">
 <tt class="descname">delete</tt><big>(</big><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PosePointCloud.delete" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="method">
+<dt id="Red9.core.Red9_PoseSaver.PosePointCloud.deleteCurrentInstances">
+<tt class="descname">deleteCurrentInstances</tt><big>(</big><big>)</big><a class="headerlink" href="#Red9.core.Red9_PoseSaver.PosePointCloud.deleteCurrentInstances" title="Permalink to this definition">¶</a></dt>
+<dd><p>delete any current instances of PPC clouds</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -328,13 +424,13 @@ and for key in keys compare, with tolerance, the [attrs] block.</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">mPoseB</span><span class="o">.</span><span class="n">metaPose</span><span class="o">=</span><span class="bp">True</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">mPoseB</span><span class="o">.</span><span class="n">buildInternalPoseData</span><span class="p">(</span><span class="n">cmds</span><span class="o">.</span><span class="n">ls</span><span class="p">(</span><span class="n">sl</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span>
-<span class="go">&gt;&gt;&gt;compare=r9Pose.PoseCompare(mPoseA,mPoseB)</span>
-<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">compare</span><span class="o">=</span><span class="n">r9Pose</span><span class="o">.</span><span class="n">PoseCompare</span><span class="p">(</span><span class="n">mPoseA</span><span class="p">,</span><span class="n">mPoseB</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c">#.... or ....</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">compare</span><span class="o">=</span><span class="n">r9Pose</span><span class="o">.</span><span class="n">PoseCompare</span><span class="p">(</span><span class="n">mPoseA</span><span class="p">,</span><span class="s">&#39;H:/Red9PoseTests/thisPose.pose&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c">#.... or ....</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">compare</span><span class="o">=</span><span class="n">r9Pose</span><span class="o">.</span><span class="n">PoseCompare</span><span class="p">(</span><span class="s">&#39;H:/Red9PoseTests/thisPose.pose&#39;</span><span class="p">,</span><span class="s">&#39;H:/Red9PoseTests/thatPose.pose&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span>    
+<span class="gp">&gt;&gt;&gt; </span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">compare</span><span class="o">.</span><span class="n">compare</span><span class="p">()</span> <span class="c">#&gt;&gt; bool, True = same</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">compare</span><span class="o">.</span><span class="n">fails</span><span class="p">[</span><span class="s">&#39;failedAttrs&#39;</span><span class="p">]</span>
 </pre></div>
@@ -461,11 +557,11 @@ fixing issues on mass with poses. Note we now pass pose file back into this func
         <li class="right" >
           <a href="Red9_Meta.html" title="Red9_Meta"
              >previous</a> |</li>
-        <li><a href="../index.html">Red9 v1.42 documentation</a> &raquo;</li> 
+        <li><a href="../index.html">Red9 v2.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2013, Mark Jackson.
+        &copy; Copyright 2015, Mark Jackson.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0b2.
     </div>
   </body>

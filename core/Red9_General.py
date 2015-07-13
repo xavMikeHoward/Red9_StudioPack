@@ -24,6 +24,8 @@ import inspect
 import sys
 import tempfile
 import subprocess
+import json
+import itertools
 
 #Only valid Red9 import
 import Red9.startup.setup as r9Setup
@@ -244,7 +246,39 @@ class undoContext(object):
     """
     Simple Context Manager for chunking the undoState
     """
+    def __init__(self, initialUndo=False, undoFuncCache=[], undoDepth=1):
+        '''
+        If initialUndo is True then the context manager will manage what to do on entry with
+        the undoStack. The idea is that if True the code will look at the last functions in the
+        undoQueue and if any of those mantch those in the undoFuncCache, it'll undo them to the
+        depth given. 
+        WHY?????? This is specifically designed for things like floatFliders where you've
+        set a function to act on the 'dc' flag, (drag command) by passing that func through this
+        each drag will only go into the stack once, enabling you to drag as much as you want
+        and return to the initial state, pre ALL drags, in one chunk. 
+        
+        :param initialUndo: on first process whether undo on entry to the context manager
+        :param undoFuncCache: only if initialUndo = True : functions to catch in the undo stack
+        :param undoDepth: only if initialUndo = True : depth of the undo stack to go to
+        
+        .. note ::
+            When adding funcs to this you CAN'T call the 'dc' command on any slider with a lambda func,
+            it has to call a specific func to catch in the undoStack. See Red9_AnimationUtils.FilterCurves
+            code for a live example of this setup.
+        '''
+        self.initialUndo = initialUndo
+        self.undoFuncCache = undoFuncCache
+        self.undoDepth = undoDepth
+    
+    def undoCall(self):
+        for _ in range(1, self.undoDepth + 1):
+            #log.depth('undoDepth : %s' %  i)
+            if [func for func in self.undoFuncCache if func in cmds.undoInfo(q=True, undoName=True)]:
+                cmds.undo()
+                      
     def __enter__(self):
+        if self.initialUndo:
+            self.undoCall()
         cmds.undoInfo(openChunk=True)
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -424,6 +458,12 @@ class SceneRestoreContext(object):
         self.dataStore['timeUnit'] = cmds.currentUnit(q=True, fullName=True, time=True)
         self.dataStore['sceneUnits'] = cmds.currentUnit(q=True, fullName=True, linear=True)
         self.dataStore['upAxis'] = cmds.upAxis(q=True, axis=True)
+
+        #viewport colors
+        self.dataStore['displayGradient'] = cmds.displayPref(q=True, displayGradient=True)
+
+        #objects colors
+        self.dataStore['curvecolor'] = cmds.displayColor("curve", q=True, dormant=True)
         
         #panel management
         self.dataStore['panelStore'] = {}
@@ -434,16 +474,19 @@ class SceneRestoreContext(object):
             self.dataStore['panelStore'][panel]['settings'] = cmds.modelEditor(panel, q=True, sts=True)
             activeCam = cmds.modelPanel(panel, q=True, camera=True)
             if not cmds.nodeType(activeCam) == 'camera':
-                activeCam = cmds.listRelatives(activeCam)[0]
+                activeCam = cmds.listRelatives(activeCam, f=True)[0]
             self.dataStore['panelStore'][panel]['activeCam'] = activeCam
                         
         #camera management
         #TODO : store the camera field of view etc also
         self.dataStore['cameraTransforms']={}
         for cam in ['persp', 'top', 'side', 'front']:
-            self.dataStore['cameraTransforms'][cam] = [cmds.getAttr('%s.translate' % cam),
+            try:
+                self.dataStore['cameraTransforms'][cam] = [cmds.getAttr('%s.translate' % cam),
                                                      cmds.getAttr('%s.rotate' % cam),
                                                      cmds.getAttr('%s.scale' % cam)]
+            except:
+                log.debug("Camera doesn't exists : %s" % cam)
             
         #sound management
         self.dataStore['activeSound'] = cmds.timeControl(self.gPlayBackSlider, q=True, s=1)
@@ -469,21 +512,34 @@ class SceneRestoreContext(object):
         cmds.upAxis(axis=self.dataStore['upAxis'])
         
         log.info('Restored PlayBack / Timeline setup')
+
+        #viewport colors
+        cmds.displayPref(displayGradient=self.dataStore['displayGradient'])
+        cmds.displayRGBColor(resetToSaved=True)
+
+        #objects colors
+        cmds.displayColor("curve", self.dataStore['curvecolor'], dormant=True)
         
         #panel management
         for panel, data in self.dataStore['panelStore'].items():
-            cmdString = data['settings'].replace('$editorName', panel)
-            mel.eval(cmdString)
-            log.info("Restored Panel Settings Data >> %s" % panel)
-            mel.eval('lookThroughModelPanel("%s","%s")' % (data['activeCam'], panel))
-            log.info("Restored Panel Active Camera Data >> %s >> cam : %s" % (panel, data['activeCam']))
+            try:
+                cmdString = data['settings'].replace('$editorName', panel)
+                mel.eval(cmdString)
+                log.info("Restored Panel Settings Data >> %s" % panel)
+                mel.eval('lookThroughModelPanel("%s","%s")' % (data['activeCam'], panel))
+                log.info("Restored Panel Active Camera Data >> %s >> cam : %s" % (panel, data['activeCam']))
+            except:
+                log.debug("Failed to fully Restore ActiveCamera Data >> %s >> cam : %s" % (panel, data['activeCam']))
             
         # camera management
         for cam, settings in self.dataStore['cameraTransforms'].items():
-            cmds.setAttr('%s.translate' % cam, settings[0][0][0], settings[0][0][1], settings[0][0][2])
-            cmds.setAttr('%s.rotate' % cam, settings[1][0][0], settings[1][0][1], settings[1][0][2])
-            cmds.setAttr('%s.scale' % cam, settings[2][0][0], settings[2][0][1], settings[2][0][2])
-            log.info('Restored Default Camera Transform Data : % s' % cam)
+            try:
+                cmds.setAttr('%s.translate' % cam, settings[0][0][0], settings[0][0][1], settings[0][0][2])
+                cmds.setAttr('%s.rotate' % cam, settings[1][0][0], settings[1][0][1], settings[1][0][2])
+                cmds.setAttr('%s.scale' % cam, settings[2][0][0], settings[2][0][1], settings[2][0][2])
+                log.info('Restored Default Camera Transform Data : % s' % cam)
+            except:
+                log.debug("Failed to fully Restore Default Camera Transform Data : % s" % cam)
 
         #sound management
         if self.dataStore['displaySound']:
@@ -491,6 +547,7 @@ class SceneRestoreContext(object):
             log.info('Restored Audio setup')
         else:
             cmds.timeControl(self.gPlayBackSlider, e=True, ds=0)
+        log.debug('Scene Restored fully')
         return True
     
                     
@@ -649,7 +706,10 @@ class Clipboard:
         Set clipbard text
         '''
         import ctypes
-        
+        if not value:
+            raise IOError('No text passed to the clipboard')
+        if isinstance(value, unicode):
+            value=str(value)
         if not isinstance(value, str):
             raise TypeError('value should be of str type')
 
@@ -675,6 +735,7 @@ class Clipboard:
             user32.EmptyClipboard()
             user32.SetClipboardData(CF_TEXT, hGlobalMem)
             user32.CloseClipboard()
+            log.info('Data set to clipboard : %s' % value)
             return True
 
 
@@ -791,6 +852,72 @@ def os_fileCompare(file1, file2, openDiff=False):
     else:
         log.warning('Diffmerge commandline was not found, compare aborted')
     
+
+
+def writeJson(filepath=None, content=None):
+    '''
+    write json file to disk
+
+    :param filepath: file pat to drive where to write the file
+    :param content: file content
+    :return: None
+    '''
+
+    if filepath:
+        path = os.path.dirname(filepath)
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    name = open(filepath, "w")
+    name.write(json.dumps(content, sort_keys=True, indent=4))
+    name.close()
+
+
+def readJson(filepath=None):
+    '''
+    file pat to drive where to read the file
+
+    :param filepath:
+    :return:
+    '''
+    if os.path.exists(filepath):
+        name = open(filepath, 'r')
+        try:
+            return json.load(name)
+        except ValueError:
+            pass
+
+class abcIndex(object):
+    '''
+    Alphabetic iterator
+    '''
+    def __init__(self, lower=True):
+        if lower:
+            self.__abc = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+                          'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+        else:
+            self.__abc = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+                          'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+
+        self.__iter = 0
+        self.__iterator = None
+        self.__Iterate()
+
+    def __Iterate(self):
+        self.__iter += 1
+        self.__iterator = itertools.permutations(self.__abc, self.__iter)
+
+    def next(self):
+        '''
+        Return and Alphabetic index
+        '''
+        try:
+            temp = ''.join([x for x in self.__iterator.next()])
+        except StopIteration:
+            self.__Iterate()
+            temp = ''.join([x for x in self.__iterator.next()])
+        return '%s' % temp
     
     
     
