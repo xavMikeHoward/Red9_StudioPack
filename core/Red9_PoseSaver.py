@@ -387,10 +387,14 @@ class DataMap(object):
                   
     # Process the data -------------------------------------------------
                                               
-    def _writePose(self, filepath):
+    def _writePose(self, filepath, force=False):
         '''
         Write the Pose ConfigObj to file
         '''
+        if not force:
+            if os.path.exists(filepath) and not os.access(filepath,os.W_OK):
+                raise IOError('File is Read-Only - write aborted : %s' % filepath)
+        
         ConfigObj = configobj.ConfigObj(indent_type='\t')
         ConfigObj['filterNode_settings']=self.settings.__dict__
         ConfigObj['poseData']=self.poseDict
@@ -549,7 +553,7 @@ class DataMap(object):
     #Main Calls ----------------------------------------
   
     @r9General.Timer
-    def saveData(self, nodes, filepath=None, useFilter=True, storeThumbnail=True):
+    def saveData(self, nodes, filepath=None, useFilter=True, storeThumbnail=True, force=False):
         '''
         Generic entry point for the Data Save.
         
@@ -570,7 +574,7 @@ class DataMap(object):
         self.buildDataMap(nodes)
         
         if self.filepath:
-            self._writePose(self.filepath)
+            self._writePose(self.filepath, force=force)
             
             if storeThumbnail:
                 sel=cmds.ls(sl=True,l=True)
@@ -939,7 +943,6 @@ class PosePointCloud(object):
     '''
     def __init__(self, nodes, filterSettings=None, meshes=[], *args, **kws):
         '''
-        :param rootReference: the object to be used as the PPT's pivot reference
         :param nodes: feed the nodes to process in as a list, if a filter is given
                       then these are the rootNodes for it
         :param filterSettings: pass in a filterSettings object to filter the given hierarchy
@@ -1052,8 +1055,10 @@ class PosePointCloud(object):
         cmds.setAttr("%s.localScaleZ" % ppcShape, 30)
         cmds.setAttr("%s.localScaleX" % ppcShape, 30)
         cmds.setAttr("%s.localScaleY" % ppcShape, 30)
+        
         if rootReference:
             self.rootReference=rootReference
+            
         if self.settings.filterIsActive():
             if self.prioritySnapOnly:
                 self.settings.searchPattern=self.settings.filterPriority
